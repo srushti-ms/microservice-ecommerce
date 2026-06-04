@@ -1,6 +1,7 @@
 package com.example.order_service.service;
 
 import com.example.order_service.client.ExternalServiceClient;
+import com.example.order_service.dto.OrderCreatedEvent;
 import com.example.order_service.dto.OrderItemRequestDto;
 import com.example.order_service.dto.OrderItemResponseDto;
 import com.example.order_service.dto.OrderRequestDto;
@@ -25,11 +26,13 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final ExternalServiceClient externalServiceClient;
+    private final OrderEventProducer producer;
 
     @Autowired
-    public OrderServiceImpl(OrderRepository orderRepository, ExternalServiceClient externalServiceClient) {
+    public OrderServiceImpl(OrderRepository orderRepository, ExternalServiceClient externalServiceClient, OrderEventProducer producer) {
         this.orderRepository = orderRepository;
         this.externalServiceClient = externalServiceClient;
+        this.producer = producer;
     }
 
     @Override
@@ -74,6 +77,13 @@ public class OrderServiceImpl implements OrderService {
         for (OrderItemRequestDto itemRequest : orderRequest.getItems()) {
             externalServiceClient.deductProductQuantity(itemRequest.getProductId(), itemRequest.getQuantity());
         }
+
+        producer.publish(new OrderCreatedEvent(
+                savedOrder.getId(),
+                savedOrder.getUserId(),
+                savedOrder.getItems().size()
+        ));
+
 
         return toResponse(savedOrder);
     }
