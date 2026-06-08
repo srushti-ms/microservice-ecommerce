@@ -6,6 +6,10 @@ import com.example.product_service.exception.ResourceNotFoundException;
 import com.example.product_service.model.Product;
 import com.example.product_service.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +20,8 @@ import java.util.stream.Collectors;
 @Transactional
 public class ProductServiceImpl implements ProductService {
 
+    private static final String PRODUCTS_CACHE = "products";
+
     private final ProductRepository productRepository;
 
     @Autowired
@@ -24,6 +30,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @CacheEvict(value = PRODUCTS_CACHE, allEntries = true)
     public ProductResponseDto createProduct(ProductRequestDto requestDto) {
         Product product = Product.builder()
                 .name(requestDto.getName())
@@ -34,6 +41,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(value = PRODUCTS_CACHE, key = "#id")
     @Transactional(readOnly = true)
     public ProductResponseDto getProductById(Long id) {
         Product product = findProduct(id);
@@ -41,6 +49,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(value = PRODUCTS_CACHE, key = "'all'")
     @Transactional(readOnly = true)
     public List<ProductResponseDto> getAllProducts() {
         return productRepository.findAll()
@@ -50,6 +59,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Caching(
+            put = @CachePut(value = PRODUCTS_CACHE, key = "#id"),
+            evict = @CacheEvict(value = PRODUCTS_CACHE, key = "'all'")
+    )
     public ProductResponseDto updateProduct(Long id, ProductRequestDto requestDto) {
         Product product = findProduct(id);
         product.setName(requestDto.getName());
@@ -59,6 +72,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(value = PRODUCTS_CACHE, key = "#id"),
+            @CacheEvict(value = PRODUCTS_CACHE, key = "'all'")
+    })
     public void deleteProduct(Long id) {
         Product product = findProduct(id);
         productRepository.delete(product);
