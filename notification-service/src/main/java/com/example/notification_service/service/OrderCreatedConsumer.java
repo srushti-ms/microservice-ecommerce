@@ -28,6 +28,7 @@ public class OrderCreatedConsumer {
         notification.setUserId(event.userId());
         notification.setMessage("ORDER CREATED");
         notificationServiceImpl.send(notification);
+
         log.info(
                 "Order created. OrderId={}, UserId={}, ItemCount={}",
                 event.orderId(),
