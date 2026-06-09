@@ -34,5 +34,6 @@ public class OrderCreatedConsumer {
                 event.userId(),
                 event.itemCount()
         );
+
     }
 }
